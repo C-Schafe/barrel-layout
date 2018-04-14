@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>barrel-layout</title>
+	<meta charset="utf-8">
+	<script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+	<style type="text/css">
+		.container {
+			max-width: 1080px;
+			border: 1px red solid;
+			/*height: 200px;*/
+			margin: 30px auto; 
+		}
+		.imgs-row {
+			/*border: 1px solid black;*/
+		}
+		.img-box {
+			/*border: 1px solid green;*/
+			display: inline-block;
+			/*margin: 5px;*/
+		}
+		#load {
+			visibility: hidden;
+			height: 10px;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		
+	</div>
+	<div id="load"></div>
+	<script type="text/javascript">
+		/*
+		1.获取图片
+		2.让图片加载，存放图片
+		3.图片布局
+
+		*/
+		
+
+		function Barrel($ct){
+			this.ct = $ct
+			this.rowList = []
+			this.loadImgs()
+			this.lazyLoad()
+			this.isLoaded = false 
+		}
+
+		Barrel.prototype = {
+			loadImgs: function(){
+				console.log('loadImgs')
+				var urls = this.getImgUrls(20)
+				_this = this
+				for(i=0; i < urls.length; i++){
+					var img = new Image()
+					img.src = urls[i]
+					img.onload = function(){
+						var imgWidth = this.width;
+						var imgHeight = this.height;
+						var imgInfo = {
+							thisImg: this,
+							imgWidth: 200*(imgWidth/imgHeight),
+							imgHeight: 200 
+						}
+						_this.render(imgInfo)
+					}
+				}	
+			},
+
+			render: function(imgInfo){
+				console.log('render')
+				var clientWidth = this.ct.width();
+				var rowWidth = 0;
+				var rowHeight = 0;
+				var lastImg = imgInfo
+
+				this.rowList.push(imgInfo)
+				for(i=0; i < this.rowList.length; i++){
+					rowWidth = rowWidth + this.rowList[i].imgWidth
+				}
+				if(rowWidth > clientWidth){
+					rowWidth = rowWidth - this.rowList[i-1].imgWidth
+					this.rowList.pop()
+					var newRowHeight = 200*clientWidth/rowWidth
+					this.barrelLayout(newRowHeight)
+					this.rowList = []
+					this.rowList.push(lastImg)
+				}
+				this.isLoaded = true
+			},
+
+			barrelLayout: function(newRowHeight){
+				console.log('barrelLayout')
+				var $imgRow = $('<div class="imgs-row"></div>')
+				var clientWidth = this.ct.width();
+
+				$.each(this.rowList, function(idx, imgInfo){
+					var $imgBox = $('<div class="img-box"></div>')
+					$(imgInfo.thisImg).css({'height':`${newRowHeight}px`})
+					$imgBox.append(imgInfo.thisImg)
+					$imgRow.append($imgBox)
+				})
+				this.ct.append($imgRow)
+			},
+
+			getImgUrls: function(num){
+				console.log('getImgUrls')
+				var color, width, height, urls = []
+				for(i = 0; i < num; i++){
+					color = Math.random().toString(16).substring(2,8);
+					width = Math.floor(Math.random() * 100 + 50);
+					height = Math.floor(Math.random() * 100 + 50);
+					urls.push('http://placehold.it/' + width + 'x' + height + '/' + color + '/fff')
+				}
+				return urls
+			},
+
+			isVisible: function(node){
+		      var offset = node.offset().top;
+		      var scrollTop = $(window).scrollTop();
+		      var windowHeight = $(window).height();
+		      if(offset >= scrollTop && offset <= (windowHeight + scrollTop)){
+		          return true
+		      }else{
+		          return false
+		      }  
+		    },
+
+		    lazyLoad: function(){
+		    	var _this = this
+		    	$(window).on('scroll',function(){
+		    		if(_this.isVisible($('#load')) && (_this.isLoaded)){
+		    			_this.isLoaded = false
+						new Barrel($('.container'))
+					}
+		    	})
+			}
+		}
+
+		var barrel1 = new Barrel($('.container'))
+
+	</script>
+</body>
+</html>
